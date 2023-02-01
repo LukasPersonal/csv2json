@@ -19,3 +19,121 @@
 # NOTES:
 # Input file should be in the format:
 # standard csv format
+
+################################################################################
+#### Function PrintUsage #######################################################
+PrintUsage()
+{
+  cat <<EOM
+Usage: gh csv2json [options]
+Options:
+    -h, --help                    : Show script help
+    -d, --debug                   : Enable Debug logging
+    -f, --file                    : Input file name
+    -o, --output                  : Output file name, defaults to stdout
+Description:
+csv2json is a script that will convert a csv file into a json object.
+Example:
+  gh csv2json --file possum_statistics.csv --output possum_statistics.json
+EOM
+  exit 0
+}
+####################################
+# Read in the parameters if passed #
+####################################
+PARAMS=""
+while (( "$#" )); do
+  case "$1" in
+    -h|--help)
+      PrintUsage;
+      ;;
+    -d|--debug)
+      DEBUG=true
+      shift
+      ;;
+    -f|--file)
+      INPUT_FILE=$2
+      shift 2
+      ;;
+    -o|--output)
+      OUTPUT_FILE=$2
+      shift 2
+      ;;
+    -*|--*=) # unsupported flags
+      echo "Error: Unsupported flag $1" >&2
+      exit 1
+      ;;
+    *) # preserve positional arguments
+  PARAMS="$PARAMS $1"
+  shift
+  ;;
+  esac
+done
+
+##################################################
+# Set positional arguments in their proper place #
+##################################################
+eval set -- "$PARAMS"
+
+############
+# Defaults #
+############
+EPOCH_TIME=$(date +%s)                           # Set to current epoch time
+LOG_DIR="$(pwd)"                                 # Set to default log directory
+LOG_FILE="${LOG_DIR}/csv2json-${EPOCH_TIME}.log" # Set to default log file name
+
+################################################################################
+############################ FUNCTIONS #########################################
+################################################################################
+################################################################################
+################################################################################
+#### Function DebugJQ ##########################################################
+DebugJQ() {
+  # If Debug is on, print it out...
+  if [[ ${DEBUG} == true ]]; then
+    echo "$1" | jq '.'
+  fi
+}
+################################################################################
+#### Function Debug ############################################################
+Debug() {
+  # If Debug is on, print it out...
+  if [[ ${DEBUG} == true ]]; then
+    echo "$1"
+    # Write to log file
+    echo "$1" >> "${LOG_FILE}"
+  fi
+}
+################################################################################
+#### Function Header ###########################################################
+Header() {
+  echo ""
+  echo "######################################################"
+  echo "######################################################"
+  echo "############# csv2json conversion tool ###############"
+  echo "######################################################"
+  echo "######################################################"
+  echo ""
+  echo "Logs will be written to:[${LOG_FILE}] if debug is enabled"
+  echo "Output will be written to:[${OUTPUT_FILE}]" if "${OUTPUT_FILE}" != ""
+  echo "Output will be written to:[stdout] if "${#OUTPUT_FILE}" == 0"
+  echo ""
+
+  # Debug info
+  Debug "---- DEBUG ----"
+  Debug "Input File:[${INPUT_FILE}]"
+  Debug "Output File:[${OUTPUT_FILE}]"
+  Debug "---- DEBUG ----"
+}
+################################################################################
+#### Function Footer ###########################################################
+Footer() {
+  #######################################
+  # Basic footer information and totals #
+  #######################################
+  echo ""
+  echo "######################################################"
+  echo "The script has completed"
+  echo "######################################################"
+  echo ""
+}
