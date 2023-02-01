@@ -59,12 +59,16 @@ while (( "$#" )); do
       OUTPUT_FILE=$2
       shift 2
       ;;
-    -*|--*=) # unsupported flags
+    --) # end argument parsing
+      shift
+      break
+      ;;
+    -*) # unsupported flags
       echo "Error: Unsupported flag $1" >&2
       exit 1
       ;;
     *) # preserve positional arguments
-  PARAMS="$PARAMS $1"
+  PARAMS="${PARAMS} $1"
   shift
   ;;
   esac
@@ -73,7 +77,7 @@ done
 ##################################################
 # Set positional arguments in their proper place #
 ##################################################
-eval set -- "$PARAMS"
+eval set -- "${PARAMS}"
 
 ############
 # Defaults #
@@ -154,6 +158,14 @@ Footer() {
   echo ""
 }
 ################################################################################
+#### Function ParseCSV #########################################################
+ParseCSV() {
+  # Parse the CSV file into a json object
+  # jq -R -s -c -M -f csv2json.jq "${INPUT_FILE}" > "${OUTPUT_FILE}"
+  jq -R -s -c -M -f csv2json.jq "${INPUT_FILE}" > "${OUTPUT_FILE}"
+  # jq -R -s -c -M -f csv2json.jq "${INPUT_FILE}" > "${OUTPUT_FILE}"
+}
+################################################################################
 ############################## MAIN ############################################
 ################################################################################
 
@@ -166,6 +178,11 @@ Header
 # Validate JQ installed #
 #########################
 ValidateJQ
+
+#########################################
+# parse the CSV file into a json object #
+#########################################
+ParseCSV
 
 ##########
 # Footer #
