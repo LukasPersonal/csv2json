@@ -136,7 +136,7 @@ Header() {
   echo ""
   echo "Logs will be written to:[${LOG_FILE}] if debug is enabled"
   echo "Output will be written to:[${OUTPUT_FILE}]" if "${OUTPUT_FILE}" != ""
-  echo "Output will be written to:[stdout] if "${#OUTPUT_FILE}" == 0"
+  echo "Output will be written to:[stdout]" if "${#OUTPUT_FILE}" == 0
   echo ""
 
   # Debug info
