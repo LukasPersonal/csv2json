@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+################################################################################
+################################################################################
+####### convert csv document into json object ##################################
+################################################################################
+################################################################################
+
+# LEGEND:
+# This script is used by the gh command line to help convert a csv file
+# into a json object.
+# You can then choose to output the json object to screen, or to a file.
+
+#
+# PREREQS:
+# You need to have the following to run this script successfully:
+# - .csv file to parse data
+# - jq installed on the machine running the query
+#
+# NOTES:
+# Input file should be in the format:
+# standard csv format
