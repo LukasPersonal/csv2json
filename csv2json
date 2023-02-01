@@ -105,6 +105,22 @@ Debug() {
   fi
 }
 ################################################################################
+#### Function ValidateJQ #######################################################
+ValidateJQ() {
+  # Need to validate the machine has jq installed as we use it to do the parsing
+  # of all the json returns from GitHub
+
+  if ! jq --version &>/dev/null
+  then
+    echo "Failed to find jq in the path!"
+    echo "If this is a Mac, run command: brew install jq"
+    echo "If this is Debian, run command: sudo apt install jq"
+    echo "If this is Centos, run command: yum install jq"
+    echo "Once installed, please run this script again."
+    exit 1
+  fi
+}
+################################################################################
 #### Function Header ###########################################################
 Header() {
   echo ""
