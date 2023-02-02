@@ -85,6 +85,7 @@ eval set -- "${PARAMS}"
 EPOCH_TIME=$(date +%s)                           # Set to current epoch time
 LOG_DIR="$(pwd)"                                 # Set to default log directory
 LOG_FILE="${LOG_DIR}/csv2json-${EPOCH_TIME}.log" # Set to default log file name
+SECONDS=0                                        # Set to 0 for timing
 
 ################################################################################
 ############################ FUNCTIONS #########################################
@@ -134,9 +135,22 @@ Header() {
   echo "######################################################"
   echo "######################################################"
   echo ""
-  echo "Logs will be written to:[${LOG_FILE}] if debug is enabled"
-  echo "Output will be written to:[${OUTPUT_FILE}]" if "${OUTPUT_FILE}" != ""
-  echo "Output will be written to:[stdout]" if "${#OUTPUT_FILE}" == 0
+  # echo info if debug is true
+  if [[ ${DEBUG} == true ]]; then
+    echo "Logs will be written to:[${LOG_FILE}]"
+  fi
+  # echo output file if it is set
+  if [[ "${OUTPUT_FILE}" != "" ]]; then
+    echo "Output will be written to:[${OUTPUT_FILE}]"
+  else
+    echo "Output will be written to:[stdout]"
+  fi
+  # Print warning information
+  echo ""
+  echo "Warning: This script will overwrite any existing file with the same name as the output file."
+  echo "This script could possibly take a while to run, depending on the size of the csv file."
+  echo "This script will not validate the csv file, so please ensure it is in the correct format."
+  echo "This script could take up a large section of memory if you do NOT choose to output to a file as it will hold the entire json object in memory."
   echo ""
 
   # Debug info
@@ -155,15 +169,90 @@ Footer() {
   echo "######################################################"
   echo "The script has completed"
   echo "######################################################"
+  # Get the current epoch time
+  CURRENT_EPOCH_TIME=$(date +%s)
+  # Get the difference between the start and end time
+  SECONDS=$((CURRENT_EPOCH_TIME - EPOCH_TIME))
+  # Print out the total time it took to run the script
+  echo "Total time to run script: [${SECONDS}] seconds"
+  # print the output file if exists
+  if [[ "${OUTPUT_FILE}" != "" ]]; then
+    echo "Output file:[${OUTPUT_FILE}]"
+  fi
   echo ""
 }
 ################################################################################
 #### Function ParseCSV #########################################################
 ParseCSV() {
-  # Parse the CSV file into a json object
-  # jq -R -s -c -M -f csv2json.jq "${INPUT_FILE}" > "${OUTPUT_FILE}"
-  jq -R -s -c -M -f csv2json.jq "${INPUT_FILE}" > "${OUTPUT_FILE}"
-  # jq -R -s -c -M -f csv2json.jq "${INPUT_FILE}" > "${OUTPUT_FILE}"
+  # Read the first line of the csv file and use it as the header
+  # This will be used to create the json object
+  # Get all headers in an array as to pull from them in same order
+  HEADERS=$(head -n 1 "${INPUT_FILE}")
+
+  # Get a count of the number of rows in the csv file
+  ROW_COUNT=$(wc -l < "${INPUT_FILE}" | xargs)
+  LINE_COUNT=0
+  # Create the json object
+  # Read the csv file line by line and create the json object
+  # The first line is the header, so we skip it
+  while IFS= read -r LINE
+  do
+    # Increment the row count
+    ((LINE_COUNT++))
+    # Output the line to the log file
+    echo "Parsing Line: [${LINE_COUNT}] of [${ROW_COUNT}]"
+    Debug "Parsing Line: [${LINE_COUNT}] of [${ROW_COUNT}]"
+    Debug "${LINE}"
+    # Skip the first line as it is the header
+    if [[ "${LINE}" == "${HEADERS}" ]]; then
+      #Debug "Skipping header line"
+      continue
+    fi
+    # Need to add placeholder for empty values
+    # This is because the csv file has empty values, but the json object
+    # does not allow empty values
+    LINE=$(echo "${LINE}" | sed 's/,,/,null,/g')
+    Debug "Cleaned Line:[${LINE}]"
+
+    # Create array of values from the line seperated by comma
+    LINE_DATA=($(echo "${LINE}" | tr ',' ' '))
+    Debug "Line Data:[${LINE_DATA[*]}]"
+    
+    # Loop through the line data and create the json object
+    for DATA_POINT in "${!LINE_DATA[@]}"; do
+      # Get the header for the current index
+      HEADER=$(echo "${HEADERS}" | cut -d',' -f$((DATA_POINT+1)))
+      # Get the value for the current index
+      VALUE=$(echo "${LINE_DATA[${DATA_POINT}]}" | sed 's/"/\\"/g')
+      # Create the json object
+      if [[ "${VALUE}" == "null" ]]; then
+        # If the value is null, then we skip it
+        Debug "- Skipping [null] value for header:[${HEADER}]"
+        continue
+      elif [[ "${DATA_POINT}" == "0" ]]; then
+        JSON_OBJECT="${JSON_OBJECT},{\"${HEADER}\":\"${VALUE}\""
+      else
+        JSON_OBJECT="${JSON_OBJECT},\"${HEADER}\":\"${VALUE}\""
+      fi
+    done
+    
+    # Close the json object
+    JSON_OBJECT="${JSON_OBJECT}}"
+  done < "${INPUT_FILE}"
+
+  # Need to clean up the file
+  # Remove the first comma and replace with a bracket
+  JSON_OBJECT=$(echo "${JSON_OBJECT}" | sed 's/,/[/')
+  # Add a closing bracket to the end of the file
+  JSON_OBJECT="${JSON_OBJECT}]"
+  # Use JQ to format the json object
+  JSON_OBJECT=$(echo "${JSON_OBJECT}" | jq '.')
+  # Print the json object to the screen or to the output file
+  if [[ "${OUTPUT_FILE}" == "" ]]; then
+    echo "${JSON_OBJECT}"
+  else
+    echo "${JSON_OBJECT}" > "${OUTPUT_FILE}"
+  fi
 }
 ################################################################################
 ############################## MAIN ############################################
