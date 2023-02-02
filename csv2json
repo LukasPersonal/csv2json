@@ -211,12 +211,11 @@ ParseCSV() {
     # Need to add placeholder for empty values
     # This is because the csv file has empty values, but the json object
     # does not allow empty values
-    LINE=$(echo "${LINE//,,/,null,}")
+    LINE=$(echo "${LINE}" | sed 's/,,/,null,/g')
     Debug "Cleaned Line:[${LINE}]"
 
-    # Create array of values from the line seperated by commas using mapfile
+    # Create array of values from the line seperated by comma
     LINE_DATA=($(echo "${LINE}" | tr ',' ' '))
-    #mapfile -t LINE_DATA  < <(echo "${LINE}" | tr ',' ' ')
     Debug "Line Data:[${LINE_DATA[*]}]"
     
     # Loop through the line data and create the json object
@@ -224,7 +223,7 @@ ParseCSV() {
       # Get the header for the current index
       HEADER=$(echo "${HEADERS}" | cut -d',' -f$((DATA_POINT+1)))
       # Get the value for the current index
-      VALUE=$(echo "${LINE_DATA[${DATA_POINT//"/\\"}]}")
+      VALUE=$(echo "${LINE_DATA[${DATA_POINT}]}" | sed 's/"/\\"/g')
       # Create the json object
       if [[ "${VALUE}" == "null" ]]; then
         # If the value is null, then we skip it
@@ -243,7 +242,7 @@ ParseCSV() {
 
   # Need to clean up the file
   # Remove the first comma and replace with a bracket
-  JSON_OBJECT=$(echo "${JSON_OBJECT//,/[}")
+  JSON_OBJECT=$(echo "${JSON_OBJECT}" | sed 's/,/[/')
   # Add a closing bracket to the end of the file
   JSON_OBJECT="${JSON_OBJECT}]"
   # Use JQ to format the json object
