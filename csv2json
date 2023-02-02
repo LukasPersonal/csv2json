@@ -215,7 +215,8 @@ ParseCSV() {
     Debug "Cleaned Line:[${LINE}]"
 
     # Create array of values from the line seperated by commas using mapfile
-    mapfile -t LINE_DATA  < <(echo "${LINE}" | tr ',' ' ')
+    LINE_DATA=($(echo "${LINE}" | tr ',' ' '))
+    #mapfile -t LINE_DATA  < <(echo "${LINE}" | tr ',' ' ')
     Debug "Line Data:[${LINE_DATA[*]}]"
     
     # Loop through the line data and create the json object
